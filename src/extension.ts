@@ -22,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const jsPath = path.join(context.extensionPath, 'dist', 'wasm', 'tomlkit_core.js');
 
 	function updateDiagnostics(document: vscode.TextDocument) {
-		const isToml = document.languageId === 'toml' || document.fileName.endsWith('.toml')
+		const isToml = document.languageId === 'toml' || document.fileName.endsWith('.toml');
 		if (!isToml || !validateToml) {
 			return;
 		}
@@ -43,11 +43,11 @@ export async function activate(context: vscode.ExtensionContext) {
 				range,
 				result.message || "Syntax error TOML",
 				vscode.DiagnosticSeverity.Error
-			)
+			);
 
 			diagnosticCollection.set(document.uri, [diagnostic]);
 		} else {
-			diagnosticCollection.set(document.uri, [])
+			diagnosticCollection.set(document.uri, []);
 		}
 	}
 
