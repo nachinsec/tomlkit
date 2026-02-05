@@ -10,10 +10,12 @@
 
 ## Features
 
-- **Blazing Fast**: Incremental validation using an optimized `LineIndex` algorithm.
-- **Rust-Powered**: Built on top of the world-class `toml-rs` parser. Real-time feedback as you type.
-- **Accurate**: Detects syntax errors, unclosed strings, and malformed tables with precise line and column information.
-- **Lightweight**: Low memory footprint and minimal impact on VS Code performance.
+- **Universal Schema Validation**: Support for any TOML file via [SchemaStore](https://schemastore.org/). Automatically validates `Cargo.toml`, `pyproject.toml`, `poetry.toml`, and more.
+- **Blazing Fast**: Incremental validation using an optimized `LineIndex` algorithm in Rust.
+- **Rust-Powered**: Built on top of `toml-rs` and `valico` (WASM).
+- **Semantics & Syntax**: Detects both structural errors (malformed TOML) and semantic errors (wrong types, missing fields in schemas).
+- **Dynamic Caching**: Efficiently caches downloaded schemas locally for high performance and offline support.
+- **Lightweight**: Pure VS Code contribution without heavy background processes.
 
 ## Installation
 

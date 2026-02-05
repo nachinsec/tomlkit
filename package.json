@@ -2,7 +2,7 @@
   "name": "tomlkit",
   "displayName": "tomlkit",
   "description": "High-performance TOML validation powered by Rust & WASM",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "nachinsec",
   "icon": "icon.jpg",
   "engines": {
@@ -34,6 +34,10 @@
       {
         "command": "tomlkit.helloWorld",
         "title": "tomlkit: Test WASM"
+      },
+      {
+        "command": "tomlkit.debugSchema",
+        "title": "tomlkit: Test Schema mapping for current file"
       }
     ]
   },

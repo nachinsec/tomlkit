@@ -1,4 +1,6 @@
 use serde::Serialize;
+use serde_json;
+use valico::json_schema;
 use wasm_bindgen::prelude::*;
 
 #[derive(Serialize)]
@@ -9,6 +11,18 @@ struct ValidationResult {
     end_line: Option<u32>,
     end_column: Option<u32>,
     message: Option<String>,
+}
+
+#[derive(Serialize)]
+struct SchemaError {
+    path: String,
+    message: String,
+}
+
+#[derive(Serialize)]
+struct SchemaValidationResult {
+    valid: bool,
+    errors: Vec<SchemaError>,
 }
 
 #[wasm_bindgen]
@@ -30,8 +44,6 @@ pub fn validate_toml(content: &str) -> String {
                 let mut start_offset = range.start;
                 let mut end_offset = range.end;
 
-                // Siempre intentamos expandir a los límites del "token" conflictivo
-                // Hacia atrás hasta un delimitador
                 while start_offset > 0 {
                     let prev = content[..start_offset]
                         .char_indices()
@@ -51,7 +63,6 @@ pub fn validate_toml(content: &str) -> String {
                     }
                     start_offset = prev;
                 }
-                // Hacia adelante hasta un delimitador
                 while end_offset < content.len() {
                     let c = content[end_offset..].chars().next().unwrap();
                     if c.is_whitespace()
@@ -109,11 +120,86 @@ impl LineIndex {
             Err(idx) => idx - 1,
         };
         let line_start = self.line_starts[line];
-        // Convertimos el offset de bytes a conteo de caracteres UTF-16 (que es lo que VS Code espera)
         let col = content[line_start..offset].chars().count();
         (line as u32, col as u32)
     }
 }
 
+#[wasm_bindgen]
+pub fn validate_with_schema(toml_content: &str, json_schema: &str) -> String {
+    let toml_value = match toml::from_str::<toml::Value>(toml_content) {
+        Ok(v) => v,
+        Err(_) => {
+            return serde_json::to_string(&SchemaValidationResult {
+                valid: false,
+                errors: vec![SchemaError {
+                    path: String::from("root"),
+                    message: String::from("Invalid TOML syntax"),
+                }],
+            })
+            .unwrap();
+        }
+    };
+
+    let json_value = serde_json::to_value(toml_value).unwrap();
+    let mut schema_json: serde_json::Value = serde_json::from_str(json_schema).unwrap();
+
+    // Sanitize the schema before compiling
+    sanitize_json(&mut schema_json);
+
+    let mut scope = json_schema::Scope::new();
+    let schema = match scope.compile_and_return(schema_json, false) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::to_string(&SchemaValidationResult {
+                valid: false,
+                errors: vec![SchemaError {
+                    path: String::from("schema"),
+                    message: format!("Invalid JSON Schema: {:?}", e),
+                }],
+            })
+            .unwrap();
+        }
+    };
+
+    let validation = schema.validate(&json_value);
+    let is_valid = validation.is_valid();
+
+    let mut errors_vec = Vec::new();
+    if !is_valid {
+        for error in validation.errors {
+            errors_vec.push(SchemaError {
+                path: error.get_path().to_string(),
+                message: error.get_title().to_string(),
+            });
+        }
+    }
+
+    let result = SchemaValidationResult {
+        valid: is_valid,
+        errors: errors_vec,
+    };
+
+    serde_json::to_string(&result).unwrap()
+}
+
 #[cfg(test)]
 mod tests {}
+fn sanitize_json(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(obj) => {
+            // Remove keys starting with x-
+            obj.retain(|key, _| !key.starts_with("x-"));
+            // Recursively sanitize
+            for (_, val) in obj.iter_mut() {
+                sanitize_json(val);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for val in arr.iter_mut() {
+                sanitize_json(val);
+            }
+        }
+        _ => {}
+    }
+}
