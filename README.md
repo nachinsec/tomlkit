@@ -6,7 +6,7 @@
 
 `tomlkit` is a VS Code extension designed for developers who want instant, reliable TOML validation. By using the official Rust `toml` parser compiled to WebAssembly (WASM), we provide the same level of accuracy as `cargo` itself, right in your editor.
 
-![tomlkit icon](icon.png)
+![tomlkit icon](icon.jpg)
 
 ## Features
 
